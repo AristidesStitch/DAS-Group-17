@@ -24,6 +24,27 @@ data=read.csv("https://raw.githubusercontent.com/AristidesStitch/DAS-Group-17/ma
 head(data)
 ```
 ```{r}
+ggplot(data=data, mapping=aes(x=animal_type, fill=outcome_type)) +
+  geom_bar()
+
+#we can see dogs are the most frequent type of animal at the shelter.
+#exploring intake and outcomes can give better idea of what most influences
+#final outcome
+ggplot(data=data, mapping=aes(x=animal_type, fill=outcome_type)) +
+  geom_bar(position="dodge") +
+  labs(x="type of animal at the shelter",y="number of shelter residents",
+       title="Animals and their outcome per type at the shelter") +
+  theme(legend.position="right") +
+  guides(fill=guide_legend(title="Outcome"))
+
+ggplot(data=data, mapping=aes(x=animal_type, fill=intake_type)) +
+  geom_bar(position="dodge") +
+  labs(x="type of animal at the shelter",y="number of shelter residents",
+       title="Animals and their reason for intake per type at the shelter") +
+  theme(legend.position="right") +
+  guides(fill=guide_legend(title="Reason for Intake"))
+```
+```{r}
 #Observe the number of days an animal spends in the shelter, using the median to turn the variable time_at_shelter into a binary category
 data %>%
   select(time_at_shelter) %>%
