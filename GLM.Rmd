@@ -1,0 +1,147 @@
+---
+title: "GLM"
+author: "Chenyu Liu"
+date: "2023-03-13"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+library(tidyverse)
+library(moderndive)
+library(gapminder)
+library(sjPlot)
+library(stats)
+library(jtools)
+library(skimr)
+library(kableExtra)
+library(gridExtra)
+library(dplyr)
+```
+```{r}
+data=read.csv("/Users/liuxiaokui/Desktop/研究生第二学期课程/Data Analysis Skills/小组作业2/dataset17.csv")
+head(data)
+```
+```{r}
+#Observe the number of days an animal spends in the shelter, using the median to turn the variable time_at_shelter into a binary category
+data %>%
+  select(time_at_shelter) %>%
+  summary()
+
+
+data=data %>%
+  dplyr:::mutate.data.frame(time_group=cut(time_at_shelter,c(-Inf,4,Inf),right=FALSE,labels=c("less than 4 days","greater than 4 days")))
+```
+```{r}
+data$animal_type=as.factor(data$animal_type)
+
+data$year=as.factor(data$year)
+data$intake_type=as.factor(data$intake_type)
+data$outcome_type=as.factor(data$outcome_type)
+data$chip_status=as.factor(data$chip_status)
+data$time_group=as.factor(data$time_group)
+```
+
+```{r}
+ggplot(data = data, aes(x = time_group, y = month, fill = time_group)) +
+  geom_boxplot() +
+  labs(x = "the number of days an animal spends in the shelter", y = "month") +
+  theme(legend.position = "none")
+#It can be seen that it has the same distribution, indicating that month has little effect on the number of days an animal spends in the shelter
+```
+
+
+```{r}
+library(janitor)
+data %>%
+  tabyl(animal_type, time_group) %>%
+  adorn_percentages() %>%
+  adorn_pct_formatting() %>%
+  adorn_ns() # To show original counts
+```
+```{r}
+ggplot(data = data, aes(x = time_group, group = animal_type)) +
+  geom_bar(aes(y = ..prop.., fill = animal_type), stat = "count", position = "dodge") +
+  labs(x = "the number of days an animal spends in the shelter", y = "animal_type_probability")
+```
+```{r}
+data %>%
+  tabyl(year, time_group) %>%
+  adorn_percentages() %>%
+  adorn_pct_formatting() %>%
+  adorn_ns() # To show original counts
+```
+```{r}
+ggplot(data = data, aes(x = time_group, group = year)) +
+  geom_bar(aes(y = ..prop.., fill = year), stat = "count", position = "dodge") +
+  labs(x = "the number of days an animal spends in the shelter", y = "year_probability")
+```
+```{r}
+data %>%
+  tabyl(intake_type, time_group) %>%
+  adorn_percentages() %>%
+  adorn_pct_formatting() %>%
+  adorn_ns() # To show original counts
+```
+```{r}
+ggplot(data = data, aes(x = time_group, group = intake_type)) +
+  geom_bar(aes(y = ..prop.., fill = intake_type), stat = "count", position = "dodge") +
+  labs(x = "the number of days an animal spends in the shelter", y = "intake_type_probability")
+```
+```{r}
+data %>%
+  tabyl(outcome_type, time_group) %>%
+  adorn_percentages() %>%
+  adorn_pct_formatting() %>%
+  adorn_ns() # To show original counts
+```
+```{r}
+ggplot(data = data, aes(x = time_group, group = outcome_type)) +
+  geom_bar(aes(y = ..prop.., fill = outcome_type), stat = "count", position = "dodge") +
+  labs(x = "the number of days an animal spends in the shelter", y = "outcome_type_probability")
+```
+```{r}
+data %>%
+  tabyl(chip_status, time_group) %>%
+  adorn_percentages() %>%
+  adorn_pct_formatting() %>%
+  adorn_ns() # To show original counts
+```
+```{r}
+ggplot(data = data, aes(x = time_group, group = chip_status)) +
+  geom_bar(aes(y = ..prop.., fill = chip_status), stat = "count", position = "dodge") +
+  labs(x = "the number of days an animal spends in the shelter", y = "chip_status_probability")
+```
+```{r}
+mod.data <- glm(time_group ~animal_type+
+intake_type+outcome_type+chip_status, data = data, family = binomial(link = "logit"))
+
+mod.data%>%
+  summary()
+```
+```{r}
+# Non-significant variables were removed and re-fitted
+mod.data2 <- glm(time_group~intake_type+outcome_type, data = data, family = binomial(link = "logit"))
+
+mod.data2%>%
+  summary()
+```
+```{r}
+summ(mod.data2)
+```
+
+```{r}
+plot_model(mod.data2, show.values = TRUE,title = "", show.p = FALSE, value.offset = 0.25)
+```
+
+
+
+
+
+
+
+
+
+
+
