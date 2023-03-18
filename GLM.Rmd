@@ -20,7 +20,7 @@ library(gridExtra)
 library(dplyr)
 ```
 ```{r}
-data=read.csv("/Users/liuxiaokui/Desktop/研究生第二学期课程/Data Analysis Skills/小组作业2/dataset17.csv")
+data=read.csv("https://raw.githubusercontent.com/AristidesStitch/DAS-Group-17/main/Group_17.csv")
 head(data)
 ```
 ```{r}
