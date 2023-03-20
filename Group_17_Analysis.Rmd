@@ -1,0 +1,181 @@
+---
+title: "DAS project 2 - Group 17"
+author: "Chenyu Liu, Tianyang Zhou, Yini Gao, Aristides Artemiou, Ross Doyle"
+date: "2023-03-13"
+output: pdf_document
+---
+
+
+# Data Cleaning {#sec:DA}
+
+we started by importing and cleaning our data. We load in packages to help us plot data and fit models. After loading in the data, we check first several entries to ensure everything is correct.
+```{r label, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(moderndive)
+library(gapminder)
+library(sjPlot)
+library(stats)
+library(jtools)
+library(skimr)
+library(kableExtra)
+library(gridExtra)
+library(dplyr)
+library(janitor)
+```
+```{r}
+data=read.csv("https://raw.githubusercontent.com/AristidesStitch/DAS-Group-17/main/Group_17.csv")
+head(data)
+```
+
+
+provide a statistical summary for the animal's time at shelter. We find the median time spent is 4 days, and create two categories for observations - less than 4 days and 4 or more days. Finally, we convert numeric values into factors.
+```{r}
+
+#select only time_at_shelter column
+data %>%
+  select(time_at_shelter) %>%
+  summary()
+
+
+# add new column to split each observation into the two categories- 
+# less than 4 days and more than 4 days. animals who have spend exactly 4
+# days at the shelter are categorised as more than 4 days
+data=data %>%
+  dplyr:::mutate.data.frame(time_group=cut(time_at_shelter,c(-Inf,4,Inf),
+                    right=FALSE,labels=c("less than 4 days","4 or more days")))
+```
+```{r}
+
+# convert values into factors for later analysis
+data$animal_type=as.factor(data$animal_type)
+data$year=as.factor(data$year)
+data$intake_type=as.factor(data$intake_type)
+data$outcome_type=as.factor(data$outcome_type)
+data$chip_status=as.factor(data$chip_status)
+data$time_group=as.factor(data$time_group)
+```
+
+\newpage
+# Exploratory Analysis {#sec:EA}
+
+In this section we begin to understand the trends between the variables. We do this by providing plots of our data, for example which type of animal is most likely to stay the longest, which outcome is most likely and so on.
+
+below - boxplot of number of day at shelter for each month (less/greater than 4 days).
+```{r}
+ggplot(data = data, aes(x = time_group, y = month, fill = time_group)) +
+  geom_boxplot() +
+  labs(x = "the number of days an animal spends in the shelter", y = "month") +
+  theme(legend.position = "none")
+#It can be seen that it has the same distribution, indicating that month has little effect on the number of days an animal spends in the shelter
+```
+
+compare probability of each animal type for each category (less/greater than). fit into bar chart;
+```{r}
+data %>%
+  tabyl(animal_type, time_group) %>%
+  adorn_percentages() %>%
+  adorn_pct_formatting() %>%
+  adorn_ns() # To show original counts
+```
+```{r}
+ggplot(data = data, aes(x = time_group, group = animal_type)) +
+  geom_bar(aes(y = ..prop.., fill = animal_type), stat = "count", position = "dodge") +
+  labs(x = "the number of days an animal spends in the shelter", y = "animal_type_probability")
+```
+
+probability an animal in each category was in the shelter in either 2016 or 2017;
+```{r}
+data %>%
+  tabyl(year, time_group) %>%
+  adorn_percentages() %>%
+  adorn_pct_formatting() %>%
+  adorn_ns() # To show original counts
+```
+```{r}
+ggplot(data = data, aes(x = time_group, group = year)) +
+  geom_bar(aes(y = ..prop.., fill = year), stat = "count", position = "dodge") +
+  labs(x = "the number of days an animal spends in the shelter", y = "year_probability")
+```
+
+probability of intake type for each category;
+```{r}
+data %>%
+  tabyl(intake_type, time_group) %>%
+  adorn_percentages() %>%
+  adorn_pct_formatting() %>%
+  adorn_ns() # To show original counts
+```
+```{r}
+ggplot(data = data, aes(x = time_group, group = intake_type)) +
+  geom_bar(aes(y = ..prop.., fill = intake_type), stat = "count", position = "dodge") +
+  labs(x = "the number of days an animal spends in the shelter", y = "intake_type_probability")
+```
+
+probability of outcome for each category;
+```{r}
+data %>%
+  tabyl(outcome_type, time_group) %>%
+  adorn_percentages() %>%
+  adorn_pct_formatting() %>%
+  adorn_ns() # To show original counts
+```
+```{r}
+ggplot(data = data, aes(x = time_group, group = outcome_type)) +
+  geom_bar(aes(y = ..prop.., fill = outcome_type), stat = "count", position = "dodge") +
+  labs(x = "the number of days an animal spends in the shelter", y = "outcome_type_probability")
+```
+
+probability of chip status based on each category;
+```{r}
+data %>%
+  tabyl(chip_status, time_group) %>%
+  adorn_percentages() %>%
+  adorn_pct_formatting() %>%
+  adorn_ns() # To show original counts
+```
+```{r}
+ggplot(data = data, aes(x = time_group, group = chip_status)) +
+  geom_bar(aes(y = ..prop.., fill = chip_status), stat = "count", position = "dodge") +
+  labs(x = "the number of days an animal spends in the shelter", y = "chip_status_probability")
+```
+
+\newpage
+# Fitting Model {#sec:models}
+
+
+We fit our first model to evaluate the correlation each variable has to the length of time an animal is at the shelter. We use a GLM with a logit link function, using all variables we have examined previously.
+```{r}
+mod.data <- glm(time_group ~animal_type+
+intake_type+outcome_type+chip_status, data = data, family = binomial(link = "logit"))
+
+mod.data%>%
+  summary()
+```
+
+We discover that a number of the variables have insignificant relationships and so we remove them. The new model is again fitted.
+```{r}
+# Non-significant variables were removed and re-fitted
+mod.data2 <- glm(time_group~intake_type+outcome_type, data = data, family = binomial(link = "logit"))
+
+mod.data2%>%
+  summary()
+```
+```{r}
+summ(mod.data2)
+```
+
+Finally, we plot our fitted model.
+```{r}
+plot_model(mod.data2, show.values = TRUE,title = "", show.p = FALSE, value.offset = 0.25)
+```
+
+
+
+
+
+
+
+
+
+
+
